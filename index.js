@@ -100,7 +100,7 @@ var streamTree = function (rootStream) {
       if (reading) return
       propagateDestroyForward(node)
       propagateDestroyBackward(node)
-      if (node.callback) node.callback()
+      if (node.callback) node.callback(node.error)
     })
   }
 
