@@ -1,5 +1,5 @@
 var stream = require('stream')
-var pump = require('./index')
+var streamTree = require('./index')
 
 var rs = new stream.Readable()
 var ws = new stream.Writable()
@@ -46,7 +46,12 @@ rs.on('end', function () {
   check()
 })
 
-var res = pump(rs, toHex(), toHex(), toHex(), ws, function () {
+var stream = streamTree(rs)
+stream = stream.pipe(toHex())
+stream = stream.pipe(toHex())
+stream = stream.pipe(toHex())
+stream = stream.pipe(ws)
+var res = stream.finish(function () {
   callbackCalled = true
   check()
 })

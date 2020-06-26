@@ -1,4 +1,4 @@
-var pump = require('./index')
+var streamTree = require('./index')
 
 var rs = require('fs').createReadStream('/dev/random')
 var ws = require('fs').createWriteStream('/dev/null')
@@ -35,7 +35,12 @@ rs.on('close', function () {
   check()
 })
 
-var res = pump(rs, toHex(), toHex(), toHex(), ws, function () {
+var stream = streamTree(rs)
+stream = stream.pipe(toHex())
+stream = stream.pipe(toHex())
+stream = stream.pipe(toHex())
+stream = stream.pipe(ws)
+var res = stream.finish(function () {
   callbackCalled = true
   check()
 })

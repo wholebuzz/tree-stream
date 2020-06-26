@@ -1,6 +1,8 @@
 var once = require('once')
 var eos = require('end-of-stream')
 var fs = require('fs') // we only need fs to get the ReadStream and WriteStream prototypes
+var pipeErrors = require('pipe-errors')
+var ReadableStreamClone = require('readable-stream-clone')
 
 var noop = function () {}
 var ancient = /^v?\.0/.test(process.version)
@@ -48,35 +50,84 @@ var destroyer = function (stream, reading, writing, callback) {
   }
 }
 
-var call = function (fn) {
-  fn()
-}
+var streamTree = function (rootStream) {
+  var pipe = function(parentNode, stream) {
+    var childNode = createNode(stream, parentNode)
+    addDestroyer(parentNode, true)
+    parentNode.stream.pipe(stream)
+    pipeErrors(parentNode.stream, stream)
+    return createHandle(childNode)
+  }
 
-var pipe = function (from, to) {
-  return from.pipe(to)
-}
+  var split = function(parentNode) {
+    var pathA = createNode(new ReadableStreamClone(parentNode), parentNode)
+    var pathB = createNode(new ReadableStreamClone(parentNode), parentNode)
+    addDestroyer(parentNode, true)
+    return [ createHandle(pathA), createHandle(pathB) ]
+  }
 
-var pump = function () {
-  var streams = Array.prototype.slice.call(arguments)
-  var callback = isFn(streams[streams.length - 1] || noop) && streams.pop() || noop
+  var finish = function(finalNode, callback) {
+    if (callback) finalNode.callback = callback
+    addDestroyer(finalNode, false)
+    return finalNode.stream
+  }
 
-  if (Array.isArray(streams[0])) streams = streams[0]
-  if (streams.length < 2) throw new Error('pump requires two streams per minimum')
+  var createNode = function(stream, parentNode) {
+    var node = Object.create(null)
+    node.childNode = []
+    node.destroyed = {}
+    node.parentNode = parentNode
+    node.stream = stream
+    if (parentNode) parentNode.childNode.push(node)
+    return node
+  }
 
-  var error
-  var destroys = streams.map(function (stream, i) {
-    var reading = i < streams.length - 1
-    var writing = i > 0
-    return destroyer(stream, reading, writing, function (err) {
-      if (!error) error = err
-      if (err) destroys.forEach(call)
+  var createHandle = function(node) {
+    var handle = Object.create(null)
+    handle.pipe = function(stream) { return pipe(node, stream) }
+    handle.finish = function(callback) { return finish(node, callback) }
+    return handle
+  }
+
+  var addDestroyer = function(node, reading) {
+    var writing = node.stream != rootStream
+    node.destroy = destroyer(node.stream, reading, writing, function (err) {
+      if (!node.error) node.error = err
+      if (err) {
+        propagateDestroyForward(node)
+        propagateDestroyBackward(node)
+      }
       if (reading) return
-      destroys.forEach(call)
-      callback(error)
+      propagateDestroyForward(node)
+      propagateDestroyBackward(node)
+      if (node.callback) node.callback()
     })
-  })
+  }
 
-  return streams.reduce(pipe)
+  var propagateDestroyForward = function(node) {
+    node.destroy()
+    var i
+    for (i = 0; i < node.childNode.length; i++) {
+      propagateDestroyForward(node.childNode[i])
+    }
+  }
+
+  var propagateDestroyBackward = function(node) {
+    node.destroy()
+    if (node.parentNode) {
+      var parentChildren = node.parentNode.childNode.length
+      if (parentChildren == 1) {
+        propagateDestroyBackward(node.parentNode)
+      } else {
+        node.parentNode.destroyed[node] = true
+        if (Object.keys(node.parentNode.destroyed).length == parentChildren) {
+          propagateDestroyBackward(node.parentNode)
+        }
+      }
+    }
+  }
+
+  return createHandle(createNode(rootStream))
 }
 
-module.exports = pump
+module.exports = streamTree
