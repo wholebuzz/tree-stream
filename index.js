@@ -59,11 +59,15 @@ var streamTree = function (rootStream) {
     return createHandle(childNode)
   }
 
-  var split = function(parentNode) {
-    var pathA = createNode(new ReadableStreamClone(parentNode), parentNode)
-    var pathB = createNode(new ReadableStreamClone(parentNode), parentNode)
+  var split = function(parentNode, children) {
+    var child = []
+    var i
+    for (i = 0; i < children; i++) {
+      child.push(createHandle(createNode(new ReadableStreamClone(parentNode.stream), parentNode)))
+    }
+    parentNode.destroyed = new Set()
     addDestroyer(parentNode, true)
-    return [ createHandle(pathA), createHandle(pathB) ]
+    return child
   }
 
   var finish = function(finalNode, callback) {
@@ -75,7 +79,6 @@ var streamTree = function (rootStream) {
   var createNode = function(stream, parentNode) {
     var node = Object.create(null)
     node.childNode = []
-    node.destroyed = {}
     node.parentNode = parentNode
     node.stream = stream
     if (parentNode) parentNode.childNode.push(node)
@@ -84,8 +87,9 @@ var streamTree = function (rootStream) {
 
   var createHandle = function(node) {
     var handle = Object.create(null)
-    handle.pipe = function(stream) { return pipe(node, stream) }
     handle.finish = function(callback) { return finish(node, callback) }
+    handle.pipe = function(stream) { return pipe(node, stream) }
+    handle.split = function(children=2) { return split(node, children) }
     return handle
   }
 
@@ -119,8 +123,8 @@ var streamTree = function (rootStream) {
       if (parentChildren == 1) {
         propagateDestroyBackward(node.parentNode)
       } else {
-        node.parentNode.destroyed[node] = true
-        if (Object.keys(node.parentNode.destroyed).length == parentChildren) {
+        node.parentNode.destroyed.add(node)
+        if (node.parentNode.destroyed.size == parentChildren) {
           propagateDestroyBackward(node.parentNode)
         }
       }
