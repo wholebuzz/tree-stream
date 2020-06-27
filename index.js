@@ -124,6 +124,7 @@ var readableStreamTree = function (rootStream, parentTree) {
 
   var createHandle = function(node) {
     var handle = Object.create(null)
+    handle.node = node
     handle.finish = function(callback) { return finish(node, callback) }
     handle.pipe = function(stream) { return pipe(node, stream) }
     handle.split = function(children=2) { return split(node, children) }
@@ -145,18 +146,20 @@ var writableStreamTree = function (terminalStream) {
   }
 
   var joinReadable = function(siblingNode, siblings, newPassThrough) {
-    var parentNode = createNode(newPassThrough ? newPassThrough() : new stream.PassThrough())
+    var parentNode = createNode(newPassThrough ? newPassThrough() : new nodeStreams.PassThrough())
     var midwifeNode = createNode(new ReadableStreamClone(parentNode.stream), parentNode)
     midwifeNode.childNode.push(siblingNode)
     siblingNode.parentNode = midwifeNode
     midwifeNode.stream.pipe(siblingNode.stream)
-    addDestroyer(siblingNode, false, true)
-    addDestroyer(midwifeNode, false, true)
+    parentNode.destroyed = new Set()
+    addDestroyer(siblingNode, siblingNode.stream != terminalStream, true)
+    addDestroyer(midwifeNode, true, true)
 
     var sibling = []
     var i
     for (i = 0; i < siblings; i++) {
-      sibling.push(createHandle(readableStreamTree(new ReadableStreamClone(parentNode.stream), parentNode)))
+      sibling.push(createHandle(readableStreamTree(new ReadableStreamClone(parentNode.stream), 
+                                                   parentNode).node))
     }
     return [createHandle(parentNode), sibling]
   }
@@ -165,7 +168,8 @@ var writableStreamTree = function (terminalStream) {
     var parentNode = createNode(multi([siblingNode.stream, ...siblings], { autoDestroy: false }))
     parentNode.childNode.push(siblingNode)
     siblingNode.parentNode = parentNode
-    addDestroyer(siblingNode, false, true)
+    parentNode.destroyed = new Set()
+    addDestroyer(siblingNode, siblingNode.stream != terminalStream, true)
 
     var i
     for (i = 0; i < siblings.length; i++) {
@@ -184,6 +188,7 @@ var writableStreamTree = function (terminalStream) {
   var createHandle = function(node) {
     var handle = Object.create(null)
     handle.finish = function(callback) { return finish(node, callback) }
+    handle.joinReadable = function(siblings, newPassThrough) { return joinReadable(node, siblings, newPassThrough) }
     handle.joinWritable = function(siblings) { return joinWritable(node, siblings) }
     handle.pipeFrom = function(stream) { return pipeFrom(node, stream) }
     return handle

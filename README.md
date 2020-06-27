@@ -20,7 +20,7 @@ stream-tree does these two things for you
 ## Usage
 
 ``` js
-var streamTree = require('streamTree')
+var streamTree = require('stream-tree')
 var fs = require('fs')
 
 var source = fs.createReadStream('/dev/random')
@@ -35,6 +35,37 @@ stream.finish(function(err) {
 setTimeout(function() {
   dest.destroy() // when dest is closed stream-tree will destroy source
 }, 1000)
+```
+
+You can process an input stream and also hash it:
+
+``` js
+var streamTree = require('./index')
+var fs = require('fs')
+var hasha = require('hasha')
+
+var readable2
+var readable = streamTree.readable(fs.createReadStream('/tmp/foo.txt'))
+readable = readable.split(2)
+hasha.fromStream(readable[0].finish()).then((hash) => console.log(`Hash: ${hash}`))
+readable[1].finish().on('data', function(data){ console.log(`Data: ${data}`) })
+```
+
+Or you can just go wild.  Enjoy ;)
+
+``` js
+var streamTree = require('./stream-tree')
+var fs = require('fs')
+var hasha = require('hasha')
+
+var writable = streamTree.writable(fs.createWriteStream('/tmp/foo.txt'))
+var readable
+[writable, readable] = writable.joinReadable(1)
+hasha.fromStream(readable[0].finish()).then((hash) => console.log(`Hash: ${hash}`))
+
+writable = writable.joinWritable([fs.createWriteStream('/tmp/bar.txt')])
+var stream = writable.finish()
+stream.write('unicorn', function() { stream.end() })
 ```
 
 ## License
