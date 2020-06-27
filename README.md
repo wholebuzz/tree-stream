@@ -1,26 +1,26 @@
-# stream-tree
+# tree-stream
 
-stream-tree is a small node module that pipes streams together and destroys all of them if one of them closes.
+tree-stream is a small node module that pipes streams together and destroys all of them if one of them closes.
 
 ```
-npm install stream-tree
+npm install tree-stream
 ```
 
 This package is forked from `pump` and aims to be a superset of `pump`.  When the pipe() topology is a linked list they're functionally equivalent.
 
-[![build status](http://img.shields.io/travis/wholenews/stream-tree.svg?style=flat)](http://travis-ci.org/wholenews/stream-tree)
+[![build status](http://img.shields.io/travis/wholenews/tree-stream.svg?style=flat)](http://travis-ci.org/wholenews/tree-stream)
 
 ## What problem does it solve?
 
 When using standard `source.pipe(dest)` source will _not_ be destroyed if dest emits close or an error.
 You are also not able to provide a callback to tell when then pipe has finished.
 
-stream-tree does these two things for you
+tree-stream does these two things for you
 
 ## Usage
 
 ``` js
-var streamTree = require('stream-tree')
+var streamTree = require('tree-stream')
 var fs = require('fs')
 
 var source = fs.createReadStream('/dev/random')
@@ -33,14 +33,14 @@ stream.finish(function(err) {
 })
 
 setTimeout(function() {
-  dest.destroy() // when dest is closed stream-tree will destroy source
+  dest.destroy() // when dest is closed tree-stream will destroy source
 }, 1000)
 ```
 
 You can process an input stream and also hash it:
 
 ``` js
-var streamTree = require('./index')
+var streamTree = require('tree-stream')
 var fs = require('fs')
 var hasha = require('hasha')
 
@@ -54,7 +54,7 @@ readable[1].finish().on('data', function(data){ console.log(`Data: ${data}`) })
 Or you can just go wild.  Enjoy ;)
 
 ``` js
-var streamTree = require('./stream-tree')
+var streamTree = require('./tree-stream')
 var fs = require('fs')
 var hasha = require('hasha')
 
