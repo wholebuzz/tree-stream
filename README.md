@@ -6,7 +6,7 @@ stream-tree is a small node module that pipes streams together and destroys all 
 npm install stream-tree
 ```
 
-This package is forked from `pump` and aims to be a superset of `pump`.  When the pipe() topology is a linked list their functioanlity should be equivalent.
+This package is forked from `pump` and aims to be a superset of `pump`.  When the pipe() topology is a linked list they're functionally equivalent.
 
 [![build status](http://img.shields.io/travis/wholenews/stream-tree.svg?style=flat)](http://travis-ci.org/wholenews/stream-tree)
 

@@ -46,7 +46,7 @@ rs.on('end', function () {
   check()
 })
 
-var stream = streamTree(rs)
+var stream = streamTree.readable(rs)
 stream = stream.pipe(toHex())
 stream = stream.pipe(toHex())
 stream = stream.pipe(toHex())
