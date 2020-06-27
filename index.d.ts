@@ -8,6 +8,8 @@ export interface ReadableStreamTree {
 
 export interface WritableStreamTree {
   finish(callback?: (error?: Error) => void): Writable
+  joinReadable(siblings: number) : [StreamTree, ReadableStreamTree[]]
+  joinWritable(siblings: Writable[]): StreamTree
   pipeFrom(stream: Duplex): StreamTree
 }
 

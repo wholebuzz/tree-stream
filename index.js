@@ -1,7 +1,9 @@
 var once = require('once')
 var eos = require('end-of-stream')
 var fs = require('fs') // we only need fs to get the ReadStream and WriteStream prototypes
+var multi = require('multi-write-stream')
 var ReadableStreamClone = require('readable-stream-clone')
+var nodeStreams = require('stream') // optionally used
 
 var noop = function () {}
 var ancient = /^v?\.0/.test(process.version)
@@ -95,7 +97,7 @@ var propagateDestroyBackward = function(node) {
   }
 }
 
-var readableStreamTree = function (rootStream) {
+var readableStreamTree = function (rootStream, parentTree) {
   var pipe = function(parentNode, stream) {
     var childNode = createNode(stream, parentNode)
     addDestroyer(parentNode, true, parentNode.stream != rootStream)
@@ -128,17 +130,48 @@ var readableStreamTree = function (rootStream) {
     return handle
   }
 
-  return createHandle(createNode(rootStream))
+  return createHandle(createNode(rootStream, parentTree))
 }
 
 var writableStreamTree = function (terminalStream) {
   var pipeFrom = function(childNode, stream) {
     var parentNode = createNode(stream)
     parentNode.childNode.push(childNode)
-    childNode.parent = parentNode
+    childNode.parentNode = parentNode
 
-    addDestroyer(childNode, childNode.stream != rootStream, true)
+    addDestroyer(childNode, childNode.stream != terminalStream, true)
     stream.pipe(childNode.stream)
+    return createHandle(parentNode)
+  }
+
+  var joinReadable = function(siblingNode, siblings, newPassThrough) {
+    var parentNode = createNode(newPassThrough ? newPassThrough() : new stream.PassThrough())
+    var midwifeNode = createNode(new ReadableStreamClone(parentNode.stream), parentNode)
+    midwifeNode.childNode.push(siblingNode)
+    siblingNode.parentNode = midwifeNode
+    midwifeNode.stream.pipe(siblingNode.stream)
+    addDestroyer(siblingNode, false, true)
+    addDestroyer(midwifeNode, false, true)
+
+    var sibling = []
+    var i
+    for (i = 0; i < siblings; i++) {
+      sibling.push(createHandle(readableStreamTree(new ReadableStreamClone(parentNode.stream), parentNode)))
+    }
+    return [createHandle(parentNode), sibling]
+  }
+
+  var joinWritable = function(siblingNode, siblings) {
+    var parentNode = createNode(multi([siblingNode.stream, ...siblings], { autoDestroy: false }))
+    parentNode.childNode.push(siblingNode)
+    siblingNode.parentNode = parentNode
+    addDestroyer(siblingNode, false, true)
+
+    var i
+    for (i = 0; i < siblings.length; i++) {
+      siblingNode = createNode(siblings[i], parentNode)
+      addDestroyer(siblingNode, false, true)
+    }
     return createHandle(parentNode)
   }
 
@@ -151,6 +184,7 @@ var writableStreamTree = function (terminalStream) {
   var createHandle = function(node) {
     var handle = Object.create(null)
     handle.finish = function(callback) { return finish(node, callback) }
+    handle.joinWritable = function(siblings) { return joinWritable(node, siblings) }
     handle.pipeFrom = function(stream) { return pipeFrom(node, stream) }
     return handle
   }

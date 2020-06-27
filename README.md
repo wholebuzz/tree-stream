@@ -26,7 +26,7 @@ var fs = require('fs')
 var source = fs.createReadStream('/dev/random')
 var dest = fs.createWriteStream('/dev/null')
 
-var stream = streamTree(source)
+var stream = streamTree.readable(source)
 stream = stream.pipe(dest)
 stream.finish(function(err) {
   console.log('pipe finished', err)
