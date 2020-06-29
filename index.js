@@ -51,6 +51,7 @@ var destroyer = function (stream, reading, writing, callback) {
   }
 }
 
+// A node is created for every Stream in our tree.
 var createNode = function(stream, parentNode) {
   var node = Object.create(null)
   node.childNode = []
@@ -60,6 +61,7 @@ var createNode = function(stream, parentNode) {
   return node
 }
 
+// Adapt the `pump` destroys.forEach logic to follow the tree.
 var addDestroyer = function(node, reading, writing) {
   node.destroy = destroyer(node.stream, reading, writing, function (err) {
     if (!node.error) node.error = err
@@ -74,6 +76,7 @@ var addDestroyer = function(node, reading, writing) {
   })
 }
 
+// Any stream error destroys all descendent streams.
 var propagateDestroyForward = function(node) {
   node.destroy()
   var i
@@ -82,6 +85,7 @@ var propagateDestroyForward = function(node) {
   }
 }
 
+// Ancestor streams are only destroyed when all descendent branches have finished.
 var propagateDestroyBackward = function(node) {
   node.destroy()
   if (node.parentNode) {
@@ -97,7 +101,10 @@ var propagateDestroyBackward = function(node) {
   }
 }
 
+// readableStreamTree is a logical replacement for stream.Readable.
 var readableStreamTree = function (rootStream, parentTree) {
+
+  // Safe wrapper around Stream.pipe() for resource cleanup.
   var pipe = function(parentNode, stream) {
     var childNode = createNode(stream, parentNode)
     addDestroyer(parentNode, true, parentNode.stream != rootStream)
@@ -105,6 +112,7 @@ var readableStreamTree = function (rootStream, parentTree) {
     return createHandle(childNode)
   }
 
+  // With this utility you can pipe readable stream into multiple writable streams.
   var split = function(parentNode, children) {
     var child = []
     var i
@@ -116,12 +124,14 @@ var readableStreamTree = function (rootStream, parentTree) {
     return child
   }
 
+  // Finalize tree structure and return stream.Readable.
   var finish = function(finalNode, callback) {
     if (callback) finalNode.callback = callback
     addDestroyer(finalNode, false, finalNode.stream != rootStream)
     return finalNode.stream
   }
 
+  // Returns a handle to a terminal node of the Stream tree.
   var createHandle = function(node) {
     var handle = Object.create(null)
     handle.node = node
@@ -134,7 +144,10 @@ var readableStreamTree = function (rootStream, parentTree) {
   return createHandle(createNode(rootStream, parentTree))
 }
 
+// writableStreamTree is a logical replacement for stream.Readable.
 var writableStreamTree = function (terminalStream) {
+
+  // Analogous to readableStreamTree.pipe.
   var pipeFrom = function(childNode, stream) {
     var parentNode = createNode(stream)
     parentNode.childNode.push(childNode)
@@ -145,6 +158,7 @@ var writableStreamTree = function (terminalStream) {
     return createHandle(parentNode)
   }
 
+  // Analogous to readableStreamTree.split, returns Readables.
   var joinReadable = function(siblingNode, siblings, newPassThrough) {
     var parentNode = createNode(newPassThrough ? newPassThrough() : new nodeStreams.PassThrough())
     var midwifeNode = createNode(new ReadableStreamClone(parentNode.stream), parentNode)
@@ -158,12 +172,12 @@ var writableStreamTree = function (terminalStream) {
     var sibling = []
     var i
     for (i = 0; i < siblings; i++) {
-      sibling.push(createHandle(readableStreamTree(new ReadableStreamClone(parentNode.stream), 
-                                                   parentNode).node))
+      sibling.push(readableStreamTree(new ReadableStreamClone(parentNode.stream), parentNode))
     }
     return [createHandle(parentNode), sibling]
   }
 
+  // Analogous to readableStreamTree.split, accepts Writables.
   var joinWritable = function(siblingNode, siblings) {
     var parentNode = createNode(multi([siblingNode.stream, ...siblings], { autoDestroy: false }))
     parentNode.childNode.push(siblingNode)
@@ -179,12 +193,14 @@ var writableStreamTree = function (terminalStream) {
     return createHandle(parentNode)
   }
 
+  // Finalize tree structure and return stream.Writable.
   var finish = function(finalNode, callback) {
     if (callback) finalNode.callback = callback
     addDestroyer(finalNode, true, true)
     return finalNode.stream
   }
 
+  // Returns a handle to the root node of the Stream tree.
   var createHandle = function(node) {
     var handle = Object.create(null)
     handle.finish = function(callback) { return finish(node, callback) }

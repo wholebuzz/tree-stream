@@ -44,11 +44,14 @@ var streamTree = require('tree-stream')
 var fs = require('fs')
 var hasha = require('hasha')
 
-var readable2
 var readable = streamTree.readable(fs.createReadStream('/tmp/foo.txt'))
 readable = readable.split(2)
 hasha.fromStream(readable[0].finish()).then((hash) => console.log(`Hash: ${hash}`))
 readable[1].finish().on('data', function(data){ console.log(`Data: ${data}`) })
+
+// Outputs:
+// Data: unicorn
+// Hash: e233b19aabc7d5e53826fb734d1222f1f0444c3a3fc67ff4af370a66e7cadd2cb24009f1bc86f0bed12ca5fcb226145ad10fc5f650f6ef0959f8aadc5a594b27
 ```
 
 Or you can just go wild.  Enjoy ;)
@@ -66,6 +69,10 @@ hasha.fromStream(readable[0].finish()).then((hash) => console.log(`Hash: ${hash}
 writable = writable.joinWritable([fs.createWriteStream('/tmp/bar.txt')])
 var stream = writable.finish()
 stream.write('unicorn', function() { stream.end() })
+
+// /tmp/foo.txt and /tmp/bar.text now contain "unicorn"
+// Outputs:
+// Hash: e233b19aabc7d5e53826fb734d1222f1f0444c3a3fc67ff4af370a66e7cadd2cb24009f1bc86f0bed12ca5fcb226145ad10fc5f650f6ef0959f8aadc5a594b27
 ```
 
 ## License

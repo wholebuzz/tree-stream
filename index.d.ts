@@ -2,15 +2,15 @@ import { Duplex, Readable, Writable } from 'stream'
 
 export interface ReadableStreamTree {
   finish(callback?: (error?: Error) => void): Readable
-  pipe(stream: Duplex): StreamTree
-  split(children?: number): StreamTree[]
+  pipe(stream: Duplex): ReadableStreamTree
+  split(children?: number): ReadableStreamTree[]
 }
 
 export interface WritableStreamTree {
   finish(callback?: (error?: Error) => void): Writable
-  joinReadable(siblings: number) : [StreamTree, ReadableStreamTree[]]
-  joinWritable(siblings: Writable[]): StreamTree
-  pipeFrom(stream: Duplex): StreamTree
+  joinReadable(siblings: number) : [WritableStreamTree, ReadableStreamTree[]]
+  joinWritable(siblings: Writable[]): WritableStreamTree
+  pipeFrom(stream: Duplex): WritableStreamTree
 }
 
 declare namespace StreamTree {
