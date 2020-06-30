@@ -1,6 +1,6 @@
 {
   "name": "tree-stream",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "repository": "git://github.com/wholenews/tree-stream",
   "license": "MIT",
   "description": "pipe and split streams, closing all of them if one of them closes",
@@ -16,10 +16,10 @@
   ],
   "author": "WHOLE.NEWS <wholenewsorg@gmail.com>",
   "dependencies": {
+    "cloneable-readable": "^2.0.1",
     "end-of-stream": "^1.1.0",
     "multi-write-stream": "^2.0.1",
-    "once": "^1.3.1",
-    "readable-stream-clone": "0.0.7"
+    "once": "^1.3.1"
   },
   "scripts": {
     "test": "node test-browser.js && node test-node.js"

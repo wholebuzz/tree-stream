@@ -1,8 +1,8 @@
 var once = require('once')
+var cloneable = require('cloneable-readable')
 var eos = require('end-of-stream')
 var fs = require('fs') // we only need fs to get the ReadStream and WriteStream prototypes
 var multi = require('multi-write-stream')
-var ReadableStreamClone = require('readable-stream-clone')
 var nodeStreams = require('stream') // optionally used
 
 var noop = function () {}
@@ -114,10 +114,10 @@ var readableStreamTree = function (rootStream, parentTree) {
 
   // With this utility you can pipe readable stream into multiple writable streams.
   var split = function(parentNode, children) {
-    var child = []
+    var child = [ createHandle(createNode(cloneable(parentNode.stream), parentNode)) ]
     var i
-    for (i = 0; i < children; i++) {
-      child.push(createHandle(createNode(new ReadableStreamClone(parentNode.stream), parentNode)))
+    for (i = 1; i < children; i++) {
+      child.push(createHandle(createNode(child[0].node.stream.clone(), parentNode)))
     }
     parentNode.destroyed = new Set()
     addDestroyer(parentNode, true, parentNode.stream != rootStream)
@@ -144,7 +144,7 @@ var readableStreamTree = function (rootStream, parentTree) {
   return createHandle(createNode(rootStream, parentTree))
 }
 
-// writableStreamTree is a logical replacement for stream.Readable.
+// writableStreamTree is a logical replacement for stream.Writable.
 var writableStreamTree = function (terminalStream) {
 
   // Analogous to readableStreamTree.pipe.
@@ -161,7 +161,7 @@ var writableStreamTree = function (terminalStream) {
   // Analogous to readableStreamTree.split, returns Readables.
   var joinReadable = function(siblingNode, siblings, newPassThrough) {
     var parentNode = createNode(newPassThrough ? newPassThrough() : new nodeStreams.PassThrough())
-    var midwifeNode = createNode(new ReadableStreamClone(parentNode.stream), parentNode)
+    var midwifeNode = createNode(cloneable(parentNode.stream), parentNode)
     midwifeNode.childNode.push(siblingNode)
     siblingNode.parentNode = midwifeNode
     midwifeNode.stream.pipe(siblingNode.stream)
@@ -172,7 +172,7 @@ var writableStreamTree = function (terminalStream) {
     var sibling = []
     var i
     for (i = 0; i < siblings; i++) {
-      sibling.push(readableStreamTree(new ReadableStreamClone(parentNode.stream), parentNode))
+      sibling.push(readableStreamTree(midwifeNode.stream.clone(), parentNode))
     }
     return [createHandle(parentNode), sibling]
   }

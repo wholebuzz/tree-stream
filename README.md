@@ -54,7 +54,7 @@ readable[1].finish().on('data', function(data){ console.log(`Data: ${data}`) })
 // Hash: e233b19aabc7d5e53826fb734d1222f1f0444c3a3fc67ff4af370a66e7cadd2cb24009f1bc86f0bed12ca5fcb226145ad10fc5f650f6ef0959f8aadc5a594b27
 ```
 
-Or you can just go wild.  Enjoy ;)
+You can get pretty wild:
 
 ``` js
 var streamTree = require('./tree-stream')
