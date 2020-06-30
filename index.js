@@ -66,36 +66,38 @@ var addDestroyer = function(node, reading, writing) {
   node.destroy = destroyer(node.stream, reading, writing, function (err) {
     if (!node.error) node.error = err
     if (err) {
-      propagateDestroyForward(node)
-      propagateDestroyBackward(node)
+      propagateDestroyForward(node, node.error)
+      propagateDestroyBackward(node, node.error)
     }
     if (reading) return
-    propagateDestroyForward(node)
-    propagateDestroyBackward(node)
+    propagateDestroyForward(node, node.error)
+    propagateDestroyBackward(node, node.error)
     if (node.callback) node.callback(node.error)
   })
 }
 
 // Any stream error destroys all descendent streams.
-var propagateDestroyForward = function(node) {
+var propagateDestroyForward = function(node, err) {
+  if (!node.error) node.error = err
   node.destroy()
   var i
   for (i = 0; i < node.childNode.length; i++) {
-    propagateDestroyForward(node.childNode[i])
+    propagateDestroyForward(node.childNode[i], node.error)
   }
 }
 
 // Ancestor streams are only destroyed when all descendent branches have finished.
-var propagateDestroyBackward = function(node) {
+var propagateDestroyBackward = function(node, err) {
+  if (!node.error) node.error = err
   node.destroy()
   if (node.parentNode) {
     var parentChildren = node.parentNode.childNode.length
     if (parentChildren == 1) {
-      propagateDestroyBackward(node.parentNode)
+      propagateDestroyBackward(node.parentNode, node.error)
     } else {
       node.parentNode.destroyed.add(node)
       if (node.parentNode.destroyed.size == parentChildren) {
-        propagateDestroyBackward(node.parentNode)
+        propagateDestroyBackward(node.parentNode, node.error)
       }
     }
   }
