@@ -1,6 +1,6 @@
 {
   "name": "tree-stream",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "repository": "git://github.com/wholenews/tree-stream",
   "license": "MIT",
   "description": "pipe and split streams, closing all of them if one of them closes",

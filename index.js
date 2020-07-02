@@ -180,7 +180,7 @@ var writableStreamTree = function (terminalStream) {
   }
 
   // Analogous to readableStreamTree.split, accepts Writables.
-  var joinWritable = function(siblingNode, siblings) {
+  var joinWritable = function(siblingNode, siblings, callback) {
     var parentNode = createNode(multi([siblingNode.stream, ...siblings], { autoDestroy: false }))
     parentNode.childNode.push(siblingNode)
     siblingNode.parentNode = parentNode
@@ -190,29 +190,44 @@ var writableStreamTree = function (terminalStream) {
     var i
     for (i = 0; i < siblings.length; i++) {
       siblingNode = createNode(siblings[i], parentNode)
+      if (callback) siblingNode.callback = callback
       addDestroyer(siblingNode, false, true)
     }
     return createHandle(parentNode)
   }
 
   // Finalize tree structure and return stream.Writable.
-  var finish = function(finalNode, callback) {
-    if (callback) finalNode.callback = callback
-    addDestroyer(finalNode, true, true)
+  var finish = function(finalNode, callback, stream) {
+    if (callback) terminalNode.callback = callback
+
+    var readNode
+    if (stream) {
+      readNode = createNode(stream)
+      readNode.childNode.push(finalNode)
+      finalNode.parentNode = readNode
+    }
+
+    addDestroyer(finalNode, finalNode.stream != terminalStream, true)
+    if (readNode) {
+      addDestroyer(readNode, true, false)
+      stream.pipe(finalNode.stream)
+    }
+
     return finalNode.stream
   }
 
   // Returns a handle to the root node of the Stream tree.
   var createHandle = function(node) {
     var handle = Object.create(null)
-    handle.finish = function(callback) { return finish(node, callback) }
+    handle.finish = function(callback, stream) { return finish(node, callback, stream) }
     handle.joinReadable = function(siblings, newPassThrough) { return joinReadable(node, siblings, newPassThrough) }
-    handle.joinWritable = function(siblings) { return joinWritable(node, siblings) }
+    handle.joinWritable = function(siblings, callback) { return joinWritable(node, siblings, callback) }
     handle.pipeFrom = function(stream) { return pipeFrom(node, stream) }
     return handle
   }
 
-  return createHandle(createNode(terminalStream))
+  var terminalNode = createNode(terminalStream)
+  return createHandle(terminalNode)
 }
 
 module.exports = {
