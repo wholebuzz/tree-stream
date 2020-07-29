@@ -66,12 +66,12 @@ var addDestroyer = function(node, reading, writing) {
   node.destroy = destroyer(node.stream, reading, writing, function (err) {
     if (!node.error) node.error = err
     if (err) {
-      propagateDestroyForward(node, node.error)
       propagateDestroyBackward(node, node.error)
+      propagateDestroyForward(node, node.error)
     }
     if (reading) return
-    propagateDestroyForward(node, node.error)
     propagateDestroyBackward(node, node.error)
+    propagateDestroyForward(node, node.error)
     if (node.callback) node.callback(node.error)
   })
 }
