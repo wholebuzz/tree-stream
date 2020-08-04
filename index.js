@@ -230,7 +230,21 @@ var writableStreamTree = function (terminalStream) {
   return createHandle(terminalNode)
 }
 
+var streamTreeWriter = function(writeCallback) {
+  return async (writable) => {
+    const error = await new Promise(async (resolve, reject) => {
+      const stream = writable.finish((err) => {
+        if (err) reject(err)
+        else resolve()
+      })
+      await writeCallback(stream)
+    })
+    return !error
+  }
+}
+
 module.exports = {
   readable: readableStreamTree,
   writable: writableStreamTree,
+  writer: streamTreeWriter,
 }

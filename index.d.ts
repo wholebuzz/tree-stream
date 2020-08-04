@@ -1,6 +1,7 @@
 import { Duplex, Readable, Writable } from 'stream'
 
 export type Callback = (error?: Error) => void
+export type WritableStreamTreeFilter = (writable: WritableStreamTree) => Promise<boolean>
 
 export interface ReadableStreamTree {
   finish(callback?: Callback): Readable
@@ -18,6 +19,7 @@ export interface WritableStreamTree {
 declare namespace StreamTree {
   const readable: (stream: Readable) => ReadableStreamTree
   const writable: (stream: Writable) => WritableStreamTree
+  const writer: (writeCallback: (w: Writable) => Promise<void>) => WritableStreamTreeFilter
 }
 
 export = StreamTree
