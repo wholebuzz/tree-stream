@@ -237,7 +237,11 @@ var streamTreeWriter = function(writeCallback) {
         if (err) reject(err)
         else resolve()
       })
-      await writeCallback(stream)
+      if (Array.isArray(writeCallback)) {
+        for (const wcb of writeCallback) await wcb(stream)
+      } else {
+        await writeCallback(stream)
+      }
     })
     return !error
   }
