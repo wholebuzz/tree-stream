@@ -1,17 +1,17 @@
 import { Duplex, Readable, Writable } from 'stream'
 
-export type Callback = (error?: Error) => void
-export type WritableCallback = (writable: Writable) => Promise<void>
-export type WritableStreamTreeFilter = (writable: WritableStreamTree) => Promise<boolean>
-
 declare namespace StreamTree {
-  export interface ReadableStreamTree {
+  type Callback = (error?: Error) => void
+  type WritableCallback = (writable: Writable) => Promise<void>
+  type WritableStreamTreeFilter = (writable: WritableStreamTree) => Promise<boolean>
+
+  interface ReadableStreamTree {
     finish(callback?: Callback): Readable
     pipe(stream: Duplex): ReadableStreamTree
     split(children?: number): ReadableStreamTree[]
   }
 
-  export interface WritableStreamTree {
+  interface WritableStreamTree {
     finish(callback?: Callback, pipe?: Readable): Writable
     joinReadable(siblings: number): [WritableStreamTree, ReadableStreamTree[]]
     joinWritable(siblings: Writable[], callback?: Callback[]): WritableStreamTree
