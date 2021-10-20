@@ -247,8 +247,38 @@ var streamTreeWriter = function(writeCallback) {
   }
 }
 
+var pumpReadable = function(stream, resolveValue) {
+  return new Promise((resolve, reject) => {
+    finishReadable(stream, resolve, reject, resolveValue)
+  })
+}
+
+var pumpWritable = function(stream, resolveValue, readable) {
+  return new Promise((resolve, reject) => {
+    finishWritable(stream, resolve, reject, resolveValue, readable)
+  })
+}
+
+var finishReadable = function(stream, resolve, reject, resolveValue) {
+  return stream.finish((err) => {
+    if (err) reject(err)
+    else resolve(resolveValue)
+  })
+}
+
+var finishWritable = function(stream, resolve, reject, resolveValue, readable) {
+  return stream.finish((err) => {
+    if (err) reject(err)
+    else resolve(resolveValue)
+  }, readable)
+}
+
 module.exports = {
   readable: readableStreamTree,
   writable: writableStreamTree,
   writer: streamTreeWriter,
+  pumpReadable: pumpReadable,
+  pumpWritable: pumpWritable,
+  finishReadable: finishReadable,
+  finishWritable: finishWritable,
 }
