@@ -226,6 +226,15 @@ var writableStreamTree = function (terminalStream) {
     return handle
   }
 
+  // Handle stdout stream differently because it won't emit finish.
+  if (terminalStream == process.stdout) {
+    terminalStream = new nodeStreams.Writable({
+      write(chunk, _encoding, callback) {
+        process.stdout.write(chunk, callback);
+      },
+    })
+  }
+
   var terminalNode = createNode(terminalStream)
   return createHandle(terminalNode)
 }
