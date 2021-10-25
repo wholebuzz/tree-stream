@@ -5,13 +5,21 @@ declare namespace StreamTree {
   type WritableCallback = (writable: Writable) => Promise<void>
   type WritableStreamTreeFilter = (writable: WritableStreamTree) => Promise<boolean>
 
+  interface TreeNode {
+    childNode: TreeNode[]
+    parentNode: TreeNode
+    stream: any
+  }
+
   interface ReadableStreamTree {
+    node: TreeNode
     finish(callback?: Callback): Readable
     pipe(stream: Duplex): ReadableStreamTree
     split(children?: number): ReadableStreamTree[]
   }
 
   interface WritableStreamTree {
+    node: TreeNode
     finish(callback?: Callback, pipe?: Readable): Writable
     joinReadable(siblings: number): [WritableStreamTree, ReadableStreamTree[]]
     joinWritable(siblings: Writable[], callback?: Callback[]): WritableStreamTree

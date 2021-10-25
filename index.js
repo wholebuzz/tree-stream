@@ -219,6 +219,7 @@ var writableStreamTree = function (terminalStream) {
   // Returns a handle to the root node of the Stream tree.
   var createHandle = function(node) {
     var handle = Object.create(null)
+    handle.node = node
     handle.finish = function(callback, stream) { return finish(node, callback, stream) }
     handle.joinReadable = function(siblings, newPassThrough) { return joinReadable(node, siblings, newPassThrough) }
     handle.joinWritable = function(siblings, callback) { return joinWritable(node, siblings, callback) }
