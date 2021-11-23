@@ -15,6 +15,7 @@ declare namespace StreamTree {
     node: TreeNode
     finish(callback?: Callback): Readable
     pipe(stream: Duplex): ReadableStreamTree
+    piped(parent: ReadableStreamTree): void
     split(children?: number): ReadableStreamTree[]
   }
 
@@ -24,6 +25,7 @@ declare namespace StreamTree {
     joinReadable(siblings: number): [WritableStreamTree, ReadableStreamTree[]]
     joinWritable(siblings: Writable[], callback?: Callback[]): WritableStreamTree
     pipeFrom(stream: Duplex): WritableStreamTree
+    pipedFrom(parent: WritableStreamTree): void
   }
 
   const readable: (stream: Readable) => ReadableStreamTree

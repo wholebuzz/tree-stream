@@ -108,10 +108,16 @@ var readableStreamTree = function (rootStream, parentTree) {
 
   // Safe wrapper around Stream.pipe() for resource cleanup.
   var pipe = function(parentNode, stream) {
-    var childNode = createNode(stream, parentNode)
-    addDestroyer(parentNode, true, parentNode.stream != rootStream)
+    var childNode = createNode(stream)
+    piped(parentNode, childNode)
     parentNode.stream.pipe(stream)
     return createHandle(childNode)
+  }
+
+  var piped = function(parentNode, childNode) {
+    parentNode.childNode.push(childNode)
+    childNode.parentNode = parentNode
+    addDestroyer(parentNode, true, parentNode.stream != rootStream)
   }
 
   // With this utility you can pipe readable stream into multiple writable streams.
@@ -139,6 +145,7 @@ var readableStreamTree = function (rootStream, parentTree) {
     handle.node = node
     handle.finish = function(callback) { return finish(node, callback) }
     handle.pipe = function(stream) { return pipe(node, stream) }
+    handle.piped = function(childNode) { return piped(node, childNode.node) }
     handle.split = function(children=2) { return split(node, children) }
     return handle
   }
@@ -152,12 +159,16 @@ var writableStreamTree = function (terminalStream) {
   // Analogous to readableStreamTree.pipe.
   var pipeFrom = function(childNode, stream) {
     var parentNode = createNode(stream)
-    parentNode.childNode.push(childNode)
-    childNode.parentNode = parentNode
-
-    addDestroyer(childNode, childNode.stream != terminalStream, true)
+    pipedFrom(childNode, parentNode)
     stream.pipe(childNode.stream)
     return createHandle(parentNode)
+  }
+
+  var pipedFrom = function(childNode, parentNode, external) {
+    if (!parentNode.destroyed) parentNode.destroyed = new Set()
+    parentNode.childNode.push(childNode)
+    childNode.parentNode = parentNode
+    addDestroyer(childNode, external || childNode.stream != terminalStream, true)
   }
 
   // Analogous to readableStreamTree.split, returns Readables.
@@ -224,6 +235,7 @@ var writableStreamTree = function (terminalStream) {
     handle.joinReadable = function(siblings, newPassThrough) { return joinReadable(node, siblings, newPassThrough) }
     handle.joinWritable = function(siblings, callback) { return joinWritable(node, siblings, callback) }
     handle.pipeFrom = function(stream) { return pipeFrom(node, stream) }
+    handle.pipedFrom = function(parentNode) { return pipedFrom(node, parentNode.node, true) }
     return handle
   }
 
