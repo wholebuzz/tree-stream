@@ -72,7 +72,10 @@ var addDestroyer = function(node, reading, writing) {
     if (reading) return
     propagateDestroyBackward(node, node.error)
     propagateDestroyForward(node, node.error)
-    if (node.callback) node.callback(node.error)
+    if (node.callback) {
+      node.callback(node.error)
+      node.callback = null
+    }
   })
 }
 
@@ -90,6 +93,10 @@ var propagateDestroyForward = function(node, err) {
 var propagateDestroyBackward = function(node, err) {
   if (!node.error) node.error = err
   node.destroy()
+  if (node.callback) {
+    node.callback(node.error)
+    node.callback = null
+  }
   if (node.parentNode) {
     var parentChildren = node.parentNode.childNode.length
     if (parentChildren == 1) {
@@ -218,7 +225,7 @@ var writableStreamTree = function (terminalStream) {
       finalNode.parentNode = readNode
     }
 
-    addDestroyer(finalNode, finalNode.stream != terminalStream, true)
+    addDestroyer(finalNode, finalNode.destroyed || finalNode.stream != terminalStream, true)
     if (readNode) {
       addDestroyer(readNode, true, false)
       stream.pipe(finalNode.stream)
