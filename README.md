@@ -8,9 +8,55 @@ npm install tree-stream
 
 This package is forked from `pump` and aims to be a superset of `pump`.  When the pipe() topology is a linked list they're functionally equivalent.
 
-[![build status](http://img.shields.io/travis/wholenews/tree-stream.svg?style=flat)](http://travis-ci.org/wholenews/tree-stream)
+[![build status](http://img.shields.io/travis/wholbuzzz/tree-stream.svg?style=flat)](http://travis-ci.org/wholebuzz/tree-stream)
 
 ## What problem does it solve?
+
+- The object model of (`ReadableStreamTree` and `WritableStreamTree`) is the big innovation.
+A representation for a sequence (or DAG) of stream transforms turns out to be really useful.
+Sometimes you want to "pipeFrom" (for a `WritableStreamTree`): (from https://https://github.com/wholebuzz/fs/blob/master/src/local.ts)
+
+```typescript
+  async openWritableFile(url: string, _options?: OpenWritableFileOptions) {
+    let stream = StreamTree.writable(fs.createWriteStream(url))
+    if (url.endsWith('.gz')) stream = stream.pipeFrom(zlib.createGzip())
+    return stream
+  }
+```
+
+And sometimes you want the typical "pipe" case (for a `ReadableStreamTree`):
+
+```typescript
+  async openReadableFile(url: string, options?: OpenReadableFileOptions) {
+    let stream = StreamTree.readable(fs.createReadStream(url))
+    if (url.endsWith('.gz')) stream = stream.pipe(zlib.createGunzip())
+    return stream
+  }
+```
+
+You can equivalently apply a transform then, with either:
+
+```typescript
+  const tf = new Transform({ objectMode: true, transform(x, _, cb) { this.push(x); cb(); } })
+  readable.pipe(tf)
+```
+
+or
+
+```typescript
+  writable.pipeFrom(tf)
+```
+
+Provided that the `ReadableStreamTree` and `WritableStreamTree` are later connected:
+
+```typescript
+await pumpWritable(writable, undefined, readable.finish())
+```
+
+These APIs form the basis of [@wholebuzz/fs](https://www.npmjs.com/package/@wholebuzz/fs),
+which together, power [dbcp](https://www.npmjs.com/package/dbcp).
+
+- The original problem pump solved
 
 When using standard `source.pipe(dest)` source will _not_ be destroyed if dest emits close or an error.
 You are also not able to provide a callback to tell when then pipe has finished.
