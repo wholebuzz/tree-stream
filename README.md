@@ -1,4 +1,4 @@
-# tree-stream ![image](https://img.shields.io/npm/v/tree-stream) [![test](https://github.com/wholebuzz/dbcp/actions/workflows/test.yaml/badge.svg)](https://github.com/wholebuzz/tree-stream/actions/workflows/test.yaml)
+# tree-stream ![image](https://img.shields.io/npm/v/tree-stream) [![test](https://github.com/wholebuzz/tree-stream/actions/workflows/test.yaml/badge.svg)](https://github.com/wholebuzz/tree-stream/actions/workflows/test.yaml)
 
 tree-stream is a small node module that pipes streams together and destroys all of them if one of them closes.
 
