@@ -53,7 +53,7 @@ or
 Provided that the `ReadableStreamTree` and `WritableStreamTree` are connected later:
 
 ```typescript
-  const returnValue = await pumpWritable(writable, 'any return value', readable.finish())
+  const returnValue = await pumpWritable(writable, 'any return value', readable)
 ```
 
 These APIs form the basis of [@wholebuzz/fs](https://www.npmjs.com/package/@wholebuzz/fs),

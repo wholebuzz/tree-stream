@@ -215,12 +215,10 @@ var writableStreamTree = function (terminalStream) {
   }
 
   // Finalize tree structure and return stream.Writable.
-  var finish = function(finalNode, callback, stream) {
+  var finish = function(finalNode, callback, readNode) {
     if (callback) terminalNode.callback = callback
 
-    var readNode
-    if (stream) {
-      readNode = createNode(stream)
+    if (readNode) {
       readNode.childNode.push(finalNode)
       finalNode.parentNode = readNode
     }
@@ -228,7 +226,7 @@ var writableStreamTree = function (terminalStream) {
     addDestroyer(finalNode, finalNode.destroyed || finalNode.stream != terminalStream, true)
     if (readNode) {
       addDestroyer(readNode, true, false)
-      stream.pipe(finalNode.stream)
+      readNode.stream.pipe(finalNode.stream)
     }
 
     return finalNode.stream
@@ -238,7 +236,7 @@ var writableStreamTree = function (terminalStream) {
   var createHandle = function(node) {
     var handle = Object.create(null)
     handle.node = node
-    handle.finish = function(callback, stream) { return finish(node, callback, stream) }
+    handle.finish = function(callback, readHandle) { return finish(node, callback, readHandle ? readHandle.node : undefined) }
     handle.joinReadable = function(siblings, newPassThrough) { return joinReadable(node, siblings, newPassThrough) }
     handle.joinWritable = function(siblings, callback) { return joinWritable(node, siblings, callback) }
     handle.pipeFrom = function(stream) { return pipeFrom(node, stream) }

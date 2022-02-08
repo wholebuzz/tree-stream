@@ -21,7 +21,7 @@ declare namespace StreamTree {
 
   interface WritableStreamTree {
     node: TreeNode
-    finish(callback?: Callback, pipe?: Readable): Writable
+    finish(callback?: Callback, pipe?: ReadableStreamTree): Writable
     joinReadable(siblings: number): [WritableStreamTree, ReadableStreamTree[]]
     joinWritable(siblings: Writable[], callback?: Callback[]): WritableStreamTree
     pipeFrom(stream: Duplex): WritableStreamTree
@@ -33,9 +33,9 @@ declare namespace StreamTree {
   const writer: (writeCallback: WritableCallback | WritableCallback[]) => WritableStreamTreeFilter
 
   const pumpReadable: <X extends unknown>(stream: ReadableStreamTree, resolveValue: X) => Promise<X>
-  const pumpWritable: <X extends unknown>(stream: WritableStreamTree, resolveValue: X, readable?: Readable) => Promise<X>
+  const pumpWritable: <X extends unknown>(stream: WritableStreamTree, resolveValue: X, readable?: ReadableStreamTree) => Promise<X>
   const finishReadable: <X extends unknown>(stream: ReadableStreamTree, resolve: (x: X) => void, reject: (err: Error) => void, resolveValue?: X) => Readable
-  const finishWritable: <X extends unknown>(stream: WritableStreamTree, resolve: (x: X) => void, reject: (err: Error) => void, resolveValue?: X, readable?: Readable) => Writable
+  const finishWritable: <X extends unknown>(stream: WritableStreamTree, resolve: (x: X) => void, reject: (err: Error) => void, resolveValue?: X, readable?: ReadableStreamTree) => Writable
 }
 
 export = StreamTree
