@@ -57,7 +57,8 @@ Provided that the `ReadableStreamTree` and `WritableStreamTree` are connected la
 ```
 
 These APIs form the basis of [@wholebuzz/fs](https://www.npmjs.com/package/@wholebuzz/fs),
-which together, power [dbcp](https://www.npmjs.com/package/dbcp).
+which together with [dbcp](https://www.npmjs.com/package/dbcp)
+powers [@wholebuzz/mapreduce](https://www.npmjs.com/package/@wholebuzz/mapreduce).
 
 ## Usage
 
